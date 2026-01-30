@@ -3,7 +3,7 @@ name: "Genesys CX as Code Deployment"
 on:
   push:
     branches:
-      - main_skill
+      - main_queue
     paths:
       - 'Terraform/**'
   workflow_dispatch:
@@ -20,7 +20,7 @@ jobs:
 
     strategy:
       matrix:
-        module: [Skill]   # Add more modules here
+        module: [queue]   # Add more modules here
 
     env:
       GENESYSCLOUD_OAUTHCLIENT_ID: ${{ secrets.GENESYSCLOUD_OAUTHCLIENT_ID }}
@@ -48,7 +48,7 @@ jobs:
       # ---------- PLAN/APPLY (default on main_kb push) ----------
       - name: Terraform Plan (Apply)
         if: >
-          startsWith(github.ref, 'refs/heads/main_skill') &&
+          startsWith(github.ref, 'refs/heads/main_queue') &&
           !contains(github.event.head_commit.message, '[destroy]') &&
           github.event.inputs.destroy != 'true'
         working-directory: ./Terraform/${{ matrix.module }}
@@ -56,7 +56,7 @@ jobs:
 
       - name: Terraform Apply
         if: >
-          startsWith(github.ref, 'refs/heads/main_skill') &&
+          startsWith(github.ref, 'refs/heads/main_queue') &&
           !contains(github.event.head_commit.message, '[destroy]') &&
           github.event.inputs.destroy != 'true'
         working-directory: ./Terraform/${{ matrix.module }}
@@ -65,7 +65,7 @@ jobs:
       # ---------- PLAN/DESTROY (commit flag OR manual dispatch) ----------
       - name: Terraform Plan (Destroy)
         if: >
-          startsWith(github.ref, 'refs/heads/main_skill') &&
+          startsWith(github.ref, 'refs/heads/main_queue') &&
           (contains(github.event.head_commit.message, '[destroy]') ||
            github.event.inputs.destroy == 'true')
         working-directory: ./Terraform/${{ matrix.module }}
@@ -73,7 +73,7 @@ jobs:
 
       - name: Terraform Destroy (Apply destroy plan)
         if: >
-          startsWith(github.ref, 'refs/heads/main_skill') &&
+          startsWith(github.ref, 'refs/heads/main_queue') &&
           (contains(github.event.head_commit.message, '[destroy]') ||
            github.event.inputs.destroy == 'true')
         working-directory: ./Terraform/${{ matrix.module }}
