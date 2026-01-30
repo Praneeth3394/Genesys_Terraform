@@ -1,5 +1,5 @@
-resource "genesyscloud_routing_queue" "Genesys_Support Queue" {
-  name = "Genesys_Support Queue"
+resource "genesyscloud_routing_queue" "Genesys_Support_Queue" {
+  name = "Genesys_Support_Queue"
   media_settings_callback {
     enable_auto_answer        = false
     mode                      = "AgentFirst"
