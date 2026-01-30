@@ -1,4 +1,4 @@
-resource "genesyscloud_routing_queue" "example" {
+resource "genesyscloud_routing_queue" "Genesys_Support Queue" {
   name = "Genesys_Support Queue"
   media_settings_callback {
     enable_auto_answer        = false
