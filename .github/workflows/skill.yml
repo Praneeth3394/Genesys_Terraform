@@ -1,0 +1,80 @@
+name: "Genesys CX as Code Deployment"
+
+on:
+  push:
+    branches:
+      - main_skill
+    paths:
+      - 'Terraform/**'
+  workflow_dispatch:
+    inputs:
+      destroy:
+        description: 'Set to true to destroy all resources'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        module: [Skill]   # Add more modules here
+
+    env:
+      GENESYSCLOUD_OAUTHCLIENT_ID: ${{ secrets.GENESYSCLOUD_OAUTHCLIENT_ID }}
+      GENESYSCLOUD_OAUTHCLIENT_SECRET: ${{ secrets.GENESYSCLOUD_OAUTHCLIENT_SECRET }}
+      GENESYSCLOUD_REGION: ${{ secrets.GENESYSCLOUD_REGION }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.4
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Init
+        working-directory: ./Terraform/${{ matrix.module }}
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: ./Terraform/${{ matrix.module }}
+        run: terraform validate
+
+      # ---------- PLAN/APPLY (default on main_kb push) ----------
+      - name: Terraform Plan (Apply)
+        if: >
+          startsWith(github.ref, 'refs/heads/main_skill') &&
+          !contains(github.event.head_commit.message, '[destroy]') &&
+          github.event.inputs.destroy != 'true'
+        working-directory: ./Terraform/${{ matrix.module }}
+        run: terraform plan -no-color -out=tfplan
+
+      - name: Terraform Apply
+        if: >
+          startsWith(github.ref, 'refs/heads/main_skill') &&
+          !contains(github.event.head_commit.message, '[destroy]') &&
+          github.event.inputs.destroy != 'true'
+        working-directory: ./Terraform/${{ matrix.module }}
+        run: terraform apply -auto-approve tfplan
+
+      # ---------- PLAN/DESTROY (commit flag OR manual dispatch) ----------
+      - name: Terraform Plan (Destroy)
+        if: >
+          startsWith(github.ref, 'refs/heads/main_skill') &&
+          (contains(github.event.head_commit.message, '[destroy]') ||
+           github.event.inputs.destroy == 'true')
+        working-directory: ./Terraform/${{ matrix.module }}
+        run: terraform plan -destroy -no-color -out=tfplan-destroy
+
+      - name: Terraform Destroy (Apply destroy plan)
+        if: >
+          startsWith(github.ref, 'refs/heads/main_skill') &&
+          (contains(github.event.head_commit.message, '[destroy]') ||
+           github.event.inputs.destroy == 'true')
+        working-directory: ./Terraform/${{ matrix.module }}
+        run: terraform apply -auto-approve tfplan-destroy
